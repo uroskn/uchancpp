@@ -25,6 +25,13 @@ public:
     uchan(int size) : size(size), c_closed(false) { /* lol */ };
 
     size_t getSize() { return this->size; }
+    
+    void resize(size_t new_size)
+    {
+        std::unique_lock<std::mutex> lck(this->mtx);
+        this->size = new_size;
+        this->cv.notify_all();
+    }
 
     bool put(T value) { return this->put(value, -1); }
 
@@ -46,7 +53,7 @@ public:
             }
         }
         if (this->c_closed)
-            throw std::invalid_argument("Writing to closed channel");
+            return false;
         this->queue.push_back(value);
         this->cv.notify_all();
         return true;
